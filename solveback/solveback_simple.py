@@ -1,55 +1,9 @@
 #!/usr/bin/env python3
-# PYTHON_PREAMBLE_START_STANDARD:{{{
-
-# Christopher David Cotton (c)
-# http://www.cdcotton.com
-
-# modules needed for preamble
-import importlib
 import os
 from pathlib import Path
 import sys
 
-# Get full real filename
-__fullrealfile__ = os.path.abspath(__file__)
-
-# Function to get git directory containing this file
-def getprojectdir(filename):
-    curlevel = filename
-    while curlevel is not '/':
-        curlevel = os.path.dirname(curlevel)
-        if os.path.exists(curlevel + '/.git/'):
-            return(curlevel + '/')
-    return(None)
-
-# Directory of project
-__projectdir__ = Path(getprojectdir(__fullrealfile__))
-
-# Function to call functions from files by their absolute path.
-# Imports modules if they've not already been imported
-# First argument is filename, second is function name, third is dictionary containing loaded modules.
-modulesdict = {}
-def importattr(modulefilename, func, modulesdict = modulesdict):
-    # get modulefilename as string to prevent problems in <= python3.5 with pathlib -> os
-    modulefilename = str(modulefilename)
-    # if function in this file
-    if modulefilename == __fullrealfile__:
-        return(eval(func))
-    else:
-        # add file to moduledict if not there already
-        if modulefilename not in modulesdict:
-            # check filename exists
-            if not os.path.isfile(modulefilename):
-                raise Exception('Module not exists: ' + modulefilename + '. Function: ' + func + '. Filename called from: ' + __fullrealfile__ + '.')
-            # add directory to path
-            sys.path.append(os.path.dirname(modulefilename))
-            # actually add module to moduledict
-            modulesdict[modulefilename] = importlib.import_module(''.join(os.path.basename(modulefilename).split('.')[: -1]))
-
-        # get the actual function from the file and return it
-        return(getattr(modulesdict[modulefilename], func))
-
-# PYTHON_PREAMBLE_END:}}}
+__projectdir__ = Path(os.path.dirname(os.path.realpath(__file__)) + '/../')
 
 import numpy as np
 
@@ -90,9 +44,13 @@ def twoperiod_continuous_example():
     def lastperiodutility(endogval, exogval):
         return(u(endogval + exogval))
 
-    Vprime = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'Vprime_get')(lastperiodutility, endogstate_future, exogstate_future)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import Vprime_get
+    Vprime = Vprime_get(lastperiodutility, endogstate_future, exogstate_future)
 
-    V, pol = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'vf_1endogstate_continuous_oneiteration')(rewardfunction, Vprime, endogstate_now, endogstate_future, exogstate_now, exogstate_future, transmissionarray, BETA, basicchecks = True, boundfunction = boundfunction)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import vf_1endogstate_continuous_oneiteration
+    V, pol = vf_1endogstate_continuous_oneiteration(rewardfunction, Vprime, endogstate_now, endogstate_future, exogstate_now, exogstate_future, transmissionarray, BETA, basicchecks = True, boundfunction = boundfunction)
 
     print(V)
     print(pol)
@@ -138,11 +96,17 @@ def threeperiod_continuous_example():
     def lastperiodutility(endogval, exogval):
         return(u(endogval + exogval))
 
-    Vlist, pollist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'vf_solveback_continuous')(inputfunction_list, lastperiodutility, endogstate_list, exogstate_list, transmissionarray_list, beta_list, basicchecks = True, functiontype_list = 'reward', boundfunction_list = boundfunction_list)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import vf_solveback_continuous
+    Vlist, pollist = vf_solveback_continuous(inputfunction_list, lastperiodutility, endogstate_list, exogstate_list, transmissionarray_list, beta_list, basicchecks = True, functiontype_list = 'reward', boundfunction_list = boundfunction_list)
 
-    fulldistlist, endogdistlist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'dist_solveback')([1], [0.5, 0.5], endogstate_list, transmissionarray_list, pollist)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import dist_solveback
+    fulldistlist, endogdistlist = dist_solveback([1], [0.5, 0.5], endogstate_list, transmissionarray_list, pollist)
 
-    meandistlist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'dist_meanvar')(endogdistlist, endogstate_list)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import dist_meanvar
+    meandistlist = dist_meanvar(endogdistlist, endogstate_list)
 
     # print(endogdistlist)
     print(meandistlist)
@@ -188,11 +152,17 @@ def manyperiod_continuous_example(T = 3, transmissionstarmethod = True):
     def lastperiodutility(endogval, exogval):
         return(u(endogval + exogval))
 
-    Vlist, pollist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'vf_solveback_continuous')(inputfunction_list, lastperiodutility, endogstate_list, exogstate_list, transmissionarray_list, beta_list, basicchecks = True, functiontype_list = 'reward', boundfunction_list = boundfunction_list)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import vf_solveback_continuous
+    Vlist, pollist = vf_solveback_continuous(inputfunction_list, lastperiodutility, endogstate_list, exogstate_list, transmissionarray_list, beta_list, basicchecks = True, functiontype_list = 'reward', boundfunction_list = boundfunction_list)
 
-    fulldistlist, endogdistlist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'dist_solveback')([1], [0.5, 0.5], endogstate_list, transmissionarray_list, pollist)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import dist_solveback
+    fulldistlist, endogdistlist = dist_solveback([1], [0.5, 0.5], endogstate_list, transmissionarray_list, pollist)
 
-    meandistlist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'dist_meanvar')(endogdistlist, endogstate_list)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import dist_meanvar
+    meandistlist = dist_meanvar(endogdistlist, endogstate_list)
 
     # print(endogdistlist)
     print(meandistlist)
@@ -231,9 +201,13 @@ def twoperiod_discrete_example():
     # get second period V
     def lastperiodutility(endogval, exogval):
         return(u(endogval + exogval))
-    Vprime = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'Vprime_get')(lastperiodutility, endogstate_future, exogstate_future)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import Vprime_get
+    Vprime = Vprime_get(lastperiodutility, endogstate_future, exogstate_future)
 
-    V, pol = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'vf_1endogstate_discrete_oneiteration')(rewardarray, Vprime, transmissionarray, BETA)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import vf_1endogstate_discrete_oneiteration
+    V, pol = vf_1endogstate_discrete_oneiteration(rewardarray, Vprime, transmissionarray, BETA)
 
     print(V)
     print(pol)
@@ -280,16 +254,24 @@ def threeperiod_discrete_example(transmissionstarmethod = True):
     # get second period V
     def lastperiodutility(endogval, exogval):
         return(u(endogval + exogval))
-    Vprime = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'Vprime_get')(lastperiodutility, endogstate_list[-1], exogstate_list[-1])
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import Vprime_get
+    Vprime = Vprime_get(lastperiodutility, endogstate_list[-1], exogstate_list[-1])
 
 
-    Vlist, pol_list = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'vf_solveback_discrete')(rewardarray_list, Vprime, transmissionarray_list, beta_list)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import vf_solveback_discrete
+    Vlist, pol_list = vf_solveback_discrete(rewardarray_list, Vprime, transmissionarray_list, beta_list)
 
     # get the distribution
     if transmissionstarmethod is True:
-        fulldistlist, endogdistlist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'dist_solveback')([1], [0.5, 0.5], endogstate_list, transmissionarray_list, pol_list)
+        sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+        from vf_solveback_1endogstate_func import dist_solveback
+        fulldistlist, endogdistlist = dist_solveback([1], [0.5, 0.5], endogstate_list, transmissionarray_list, pol_list)
 
-        meandistlist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'dist_meanvar')(endogdistlist, endogstate_list)
+        sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+        from vf_solveback_1endogstate_func import dist_meanvar
+        meandistlist = dist_meanvar(endogdistlist, endogstate_list)
     else:
         None
 
@@ -334,14 +316,22 @@ def manyperiod_discrete_example(T = 3, transmissionstarmethod = True):
     # get second period V
     def lastperiodutility(endogval, exogval):
         return(u(endogval + exogval))
-    Vprime = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'Vprime_get')(lastperiodutility, endogstate_list[-1], exogstate_list[-1])
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import Vprime_get
+    Vprime = Vprime_get(lastperiodutility, endogstate_list[-1], exogstate_list[-1])
 
 
-    Vlist, pol_list = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'vf_solveback_discrete')(rewardarray_list, Vprime, transmissionarray_list, beta_list)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import vf_solveback_discrete
+    Vlist, pol_list = vf_solveback_discrete(rewardarray_list, Vprime, transmissionarray_list, beta_list)
 
     # get the distribution
-    fulldistlist, endogdistlist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'dist_solveback')([1], [0.5, 0.5], endogstate_list, transmissionarray_list, pol_list, transmissionstarmethod = transmissionstarmethod)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import dist_solveback
+    fulldistlist, endogdistlist = dist_solveback([1], [0.5, 0.5], endogstate_list, transmissionarray_list, pol_list, transmissionstarmethod = transmissionstarmethod)
 
-    meandistlist = importattr(__projectdir__ / Path('submodules/vfi-general/vf_solveback_1endogstate_func.py'), 'dist_meanvar')(endogdistlist, endogstate_list)
+    sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
+    from vf_solveback_1endogstate_func import dist_meanvar
+    meandistlist = dist_meanvar(endogdistlist, endogstate_list)
 
     print(meandistlist)

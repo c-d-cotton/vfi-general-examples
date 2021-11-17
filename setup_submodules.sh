@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # the submodules we're downloading are (names separated by a space):
-submodulenames="vfi-general"
+submodulenames="python-math-func vfi-general"
 
 # STANDARD_SUBMODULE_DOWNLOAD_START:{{{
 

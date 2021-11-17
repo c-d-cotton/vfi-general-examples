@@ -14,6 +14,7 @@ import sys
 __projectdir__ = Path(os.path.dirname(os.path.realpath(__file__)) + '/../')
 
 import numpy as np
+import pandas as pd
 
 sys.path.append(str(__projectdir__ / Path('submodules/vfi-general/')))
 from vfi_1endogstate_func import *
@@ -21,15 +22,33 @@ from vfi_1endogstate_func import *
 # Defaults:{{{1
 ns1 = 2000
 endogstatevec = np.exp(np.linspace(np.log(0.01), np.log(100), ns1))
-exogstatevec = [0.01, 0.1]
-transmissionarray = np.array([[0.9, 0.1], [0.4, 0.6]])
-BETA = 0.95
-R = 1.048
+exogstatevec = [0.5, 1.5]
+transmissionarray = np.array([[0.9, 0.1], [0.1, 0.9]])
 
-def full():
+# Parameters:{{{1
+BETA = 0.8
+A = 1
+ALPHA = 0.3
+DELTA = 0.1
+
+# get Lbar
+sys.path.append(str(__projectdir__ / Path('submodules/python-math-func/')))
+from markov_func import getstationarydist
+Ldist = getstationarydist(transmissionarray)
+Lmean = np.sum(Ldist * exogstatevec)
+
+def getKd(R):
+    K = (A / (R - 1 + DELTA)) ** (1 / (1-ALPHA)) * Lmean
+    return(K)
+
+
+def getKs(R):
     """
-    Compute VFI for consumption-savings problem.
+    This returns the aggregate 
     """
+
+    W = A * (A / (R - 1 + DELTA)) ** (ALPHA / (1-ALPHA))
+
     ns1 = len(endogstatevec)
     ns2 = len(exogstatevec)
 
@@ -38,31 +57,43 @@ def full():
         for s2 in range(ns2):
             for s1prime in range(ns1):
                 
-                C = endogstatevec[s1] * R + exogstatevec[s2] - endogstatevec[s1prime]
+                C = endogstatevec[s1] * R + W * exogstatevec[s2] - endogstatevec[s1prime]
 
                 if C > 0:
                     rewardarray[s1, s2, s1prime] = np.log(C)
                 else:
                     rewardarray[s1, s2, s1prime] = -1e8
 
-    V, pol = solvevfi_1endogstate_discrete(rewardarray, transmissionarray, beta = BETA, printinfo = True)
+    # set relatively imprecise criterion for speed
+    V, pol = solvevfi_1endogstate_discrete(rewardarray, transmissionarray, beta = BETA, printinfo = False, crit = 1e-3)
     # print(list(V))
     # print(list(pol))
-
-    # Solving for transmission array via transmissionstar array
-    transmissionstararray = gentransmissionstararray_1endogstate_discrete(transmissionarray, pol)
-    fullstatedist, endogstatedist = getstationarydist_1endogstate_full(transmissionstararray, ns1)
-    print('Mean Savings via Full Transmission Array')
-    # print(list(endogstatedist))
-    print(np.sum(endogstatedist * endogstatevec))
 
     # Solving for transmission array via quick method
     polprobs = getpolprobs_1endogstate_discrete(pol)
     fullstatedist, endogstatedist = getstationarydist_1endogstate_direct(transmissionarray, polprobs)
-    print('Mean Savings via Quick Method')
-    # print(list(endogstatedist))
-    print(np.sum(endogstatedist * endogstatevec))
+    meanK = np.sum(endogstatedist * endogstatevec)
 
+    return(meanK)
+
+
+def getsolution():
+    """
+    The steady state is about R = 1.233 and K = 4.8
+    """
+    Rval = np.linspace(1 / BETA - 0.05, 1 / BETA - 0.005, 10)
+    Kdlist = []
+    Kslist = []
+    for R in Rval:
+        Kdlist.append(getKd(R))
+        Kslist.append(getKs(R))
+
+    df = pd.DataFrame({'R': Rval, 'Kd': Kdlist, 'Ks': Kslist})
+    print('Solution where Kd and Ks intersect:')
+    # not calculating precisely in the interest of time
+    print(df)
 
 # Run:{{{1
-full()
+if __name__ == "__main__":
+    getsolution()
+
